@@ -1,0 +1,53 @@
+/***************************************************************
+ This file contains the function:
+ 	SystematicForm
+***************************************************************/
+
+/***************************************************************
+ SystematicForm
+ 
+ Given a full-rank matrix G, return the row-reduced echelon form
+ of a matrix (always the same) obtained from G by eventually 
+ swapping its columns so that the first rank(G) positions 
+ represent an information set. It also outputs the permutation 
+ of the column indexes. 
+
+ Input:
+        G: Full-rank matrix G
+
+ Output:
+        Systematic form of G and permutation of column indexes.
+   
+***************************************************************/
+
+function SystematicForm(G)
+	G := EchelonForm(G);
+	ncols := NumberOfColumns(G);
+	nrows := NumberOfRows(G);
+	assert nrows eq Rank(G);
+	order := [i : i in [1..ncols]];
+	
+	// given G in echelon form the condition is equivalent to have G in systematic form already
+	if G[nrows, nrows] eq 1 then 
+		return G, Sym(ncols) ! order;
+	end if;
+	
+	for i in [1..nrows] do
+		for j in [i..ncols] do
+			if G[i, j] eq 1 then
+				//swap with the first column with corresponding non-zero entry
+				if j gt i then
+					SwapColumns(~G, i, j);
+					temp := order[i];
+					order[i] := order[j];
+					order[j] := temp;
+				end if;
+				break;
+			end if;
+		end for;
+	end for;
+	
+	return EchelonForm(G), Sym(ncols) ! order;
+end function;
+
+//---

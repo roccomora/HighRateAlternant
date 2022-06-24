@@ -1,0 +1,29 @@
+load "KeyGen.mgm";
+load "FullAttack.mgm";
+
+q := 3;
+m := 6;
+r := 4;
+n := 500;
+
+k := n-r*m;
+Fq := GF(q);
+Fqm := GF(q^m);
+AssignNames(~Fqm, ["alpha"]);
+
+printf "********************\n";
+printf "Random alternant code generation\n";
+printf "********************\n\n";
+	
+AltCode := KeyGen(q, m, n, r);
+//AltCode, x_priv, y_priv := KeyGen(q, m, n, r);	//uncomment to get the private key as well
+
+x_recovered, y_recovered := FullAttack(q, m, n, r, AltCode);
+
+if x_recovered ne [] then
+	printf "Support x:\n%o\n", x_recovered;
+	printf "Multiplier y:\n%o\n", y_recovered;
+	printf "********************\n";
+end if;
+
+

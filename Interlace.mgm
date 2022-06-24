@@ -1,0 +1,46 @@
+/***************************************************************
+ This file contains the function:
+ 	Interlace
+***************************************************************/
+
+/***************************************************************
+ Interlace
+ 
+ Given the ground field size q, the extension degree m, the
+ alternant code degree r and two pairs of partial supports and
+ multipliers which agree on their common positions, return the
+ common support and multiplier from which they are derived
+ through the filtration.
+
+ Input:
+        q: Ground field size
+        m: Extension degree
+        r: Alternant code degree
+        x_recoveredA: First partial support
+        y_recoveredA: First partial multiplier
+        x_recoveredB: Second partial support
+        y_recoveredB: Second partial multiplier
+        
+ Output:
+        Common support and multiplier.
+   
+***************************************************************/
+
+function Interlace(q, r, m, x_recoveredA, x_recoveredB, y_recoveredA, y_recoveredB)
+	n := #y_recoveredA+r-3;
+	x_recovered := x_recoveredB[1..r-3] cat x_recoveredA;
+	if IsEven(q) and q gt 2 then
+		x_recovered := [Sqrt(x_recovered[i]) : i in [1..n]];
+	end if;
+
+	if r gt 3 then
+		y_recovered := [y_recoveredB[i]/&*[x_recovered[i]-x_recovered[j] : j in [r-2..2*(r-3)]] : i in [1..r-3]] cat [y_recoveredA[i-(r-3)]/&*[x_recovered[i]-x_recovered[j] : j in [1..r-3]] : i in [r-2..n-1]] cat [1];
+	else
+		y_recovered := [y_recoveredB[i] : i in [1..r-3]] cat y_recoveredA;
+	end if;
+
+	x_missing := Random(Set(GF(q^m)) diff Seqset(x_recovered));
+	y_recovered := [(x_recovered[i]-x_missing)^(r-1)*y_recovered[i] : i in [1..n-1]] cat [1];
+	x_recovered := [x_recovered[i]/(x_recovered[i]-x_missing) : i in [1..n-1]] cat [1];
+	return x_recovered, y_recovered;
+end function;

@@ -1,0 +1,60 @@
+/***************************************************************
+ This file contains the functions:
+ 	AlternantEquation
+ 	AlternantEquationCh2
+***************************************************************/
+
+/***************************************************************
+ AlternantEquation
+ 
+ Given a polynomial ring of variables PolRingVars, the generator
+ matrix genMat in systematic form of an alternant code and the
+ row index row, it computes the system equation corresponding to
+ row, with repect to the specialization X_{n-2}=0, X_{n-1}=1,
+ X_n=infty, Y_n=1.
+
+ Input:
+        PolRingVars: Polynomial ring of variables
+        genMat: generator matrix in systematic form
+        row: index of the row
+
+ Output:
+        Equation corresponding to index row.
+   
+***************************************************************/
+
+function AlternantEquation(PolRingVars, genMat, row)
+    n := NumberOfColumns(genMat);
+    k := NumberOfRows(genMat);
+    return &+[genMat[row, j1]*genMat[row, j2]*PolRingVars.(n+j1)*PolRingVars.(n+j2)*(PolRingVars.j1-PolRingVars.j2)^2 : j1 in [k+1..n-4], j2 in [k+2..n-3] | j1 lt j2]+&+[genMat[row, j1]*genMat[row, n-2]*PolRingVars.(n+j1)*PolRingVars.(n+n-2)*PolRingVars.j1^2 : j1 in [k+1..n-3]]+&+[genMat[row, j1]*genMat[row, n-1]*PolRingVars.(n+j1)*PolRingVars.(n+n-1)*(PolRingVars.j1-1)^2 : j1 in [k+1..n-3]]+&+[genMat[row, j1]*genMat[row, n]*PolRingVars.(n+j1) : j1 in [k+1..n-3]]+genMat[row, n-2]*genMat[row, n-1]*PolRingVars.(n+n-2)*PolRingVars.(n+n-1)+genMat[row, n-2]*genMat[row, n]*PolRingVars.(n+n-2)+genMat[row, n-1]*genMat[row, n]*PolRingVars.(n+n-1);
+end function;
+
+//--------------------------------------------------------------
+
+/***************************************************************
+ AlternantEquationCh2
+ 
+ Given a polynomial ring of variables PolRingVars, the generator
+ matrix genMat in systematic form of an alternant code in
+ characteristic 2 and the row index row, it computes the system
+ equation corresponding to row, with repect to the specialization
+ X_{n-2}=0, X_{n-1}=1, X_n=infty, Y_n=1 and using the change of
+ variables W_j = X_j^2.
+
+ Input:
+        PolRingVars: Polynomial ring of variables
+        genMat: generator matrix in systematic form
+        row: index of the row
+
+ Output:
+        Equation corresponding to index row.
+   
+***************************************************************/
+
+function AlternantEquationCh2(PolRingVars, genMat, row)
+    n := NumberOfColumns(genMat);
+    k := NumberOfRows(genMat);
+    return &+[genMat[row, j1]*genMat[row, j2]*PolRingVars.(n+j1)*PolRingVars.(n+j2)*(PolRingVars.j1+PolRingVars.j2) : j1 in [k+1..n-4], j2 in [k+2..n-3] | j1 lt j2]+&+[genMat[row, j1]*genMat[row, n-2]*PolRingVars.(n+j1)*PolRingVars.(n+n-2)*PolRingVars.j1 : j1 in [k+1..n-3]]+&+[genMat[row, j1]*genMat[row, n-1]*PolRingVars.(n+j1)*PolRingVars.(n+n-1)*(PolRingVars.j1+1) : j1 in [k+1..n-3]]+&+[genMat[row, j1]*genMat[row, n]*PolRingVars.(n+j1) : j1 in [k+1..n-3]]+genMat[row, n-2]*genMat[row, n-1]*PolRingVars.(n+n-2)*PolRingVars.(n+n-1)+genMat[row, n-2]*genMat[row, n]*PolRingVars.(n+n-2)+genMat[row, n-1]*genMat[row, n]*PolRingVars.(n+n-1);
+end function;
+
+//--------------------------------------------------------------

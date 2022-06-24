@@ -1,0 +1,87 @@
+/***************************************************************
+ This file contains the functions:
+ 	PolSeq
+ 	EchelonFormSystem
+***************************************************************/
+
+/***************************************************************
+ PolSeq
+ 
+ Given a multivariate polynomial P and a sequence of different
+ monomials seqMons such that seqMon contains all monomials in P,
+ construct a sequence whose terms are the coefficients of P
+ corresponding to seqMons monomial. It assumes that seqMons is
+ ordered accordingly to P's polynomial ring monomial order.
+
+ Input:
+        P: Polynomial
+        seqMons: Sequence of monomials containing P monomials 
+
+ Output:
+        Sequence of P coefficients with respect to seqMons.
+   
+***************************************************************/
+
+function PolSeq(P, seqMons)    
+    seq := [BaseRing(Parent(P)) ! 0 : i in [1..#seqMons]];
+    // null polynomial has null sequence
+    if P eq 0 then
+        return seq;
+    end if;
+    
+    // sequences of coefficients and corresponding monomials of P
+    coeffs, mons := CoefficientsAndMonomials(P);
+    li := #seqMons;
+    lj := #coeffs;
+    
+    i := 1; j := 1;
+    repeat 
+        if seqMons[i] eq mons[j] then
+            seq[i] := coeffs[j];
+            j +:=1;
+        end if;
+        i +:=1;
+    until j gt lj or i gt li;
+    
+    return seq;
+end function;
+
+//--------------------------------------------------------------
+
+/***************************************************************
+ EchelonFormSystem
+ 
+ Given a multivariate polynomial system S, it computes the 
+ associated row-reduced echelon form of its Macaulay matrix and
+ return the corresponding system. It also return the reduced
+ Macaulay matrix, the transformation matrix and the sorted
+ sequence of monomials that indexes the columns of the Macaulay
+ matrix.
+
+ Input:
+        S: Polynomial system
+
+ Output:
+        Reduced polynomial system, reduced Macaulay matrix, 
+        transformation matrix and sequence of monomials.
+   
+***************************************************************/
+
+function EchelonFormSystem(S)
+	// mons: Sorted sequence of monomials appearing in at least one equation of S
+	mons := Reverse(Sort(Setseq(Seqset(&cat[Monomials(S[i]) : i in [1..#S]]))));
+	ncols := #mons;
+	GF := Parent(LeadingCoefficient(S[1]));
+	
+	// MacaulayMat: Macaulay matrix associated to S
+	// T: Transformation matrix
+	MacaulayMat, T := EchelonForm(Matrix(GF, ncols, &cat[PolSeq(S[i], mons) : i in [1..#S]]));
+	rank := Rank(MacaulayMat);
+	
+	// S: reduced system
+	S := [&+[MacaulayMat[i,j]*mons[j] : j in [1..ncols]] : i in [1..rank]];
+	return S, RowSubmatrix(MacaulayMat, rank), T, mons;
+end function; 
+
+//--------------------------------------------------------------
+

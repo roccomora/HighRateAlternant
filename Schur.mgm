@@ -1,0 +1,74 @@
+/***************************************************************
+ This file contains the function:
+ 	ProductCodeword
+ 	ProductCode
+ 	SquareCode
+***************************************************************/
+
+/***************************************************************
+ ProductCodeword
+ 
+ Given two codewords (vectors) c and d with the same length and defined 
+ over the same field, return their component-wise product.
+
+ Input:
+        c: Vector
+        d: Vector
+
+ Output:
+        Component-wise product of c and d.
+   
+***************************************************************/
+
+function ProductCodeword(c, d)
+	n := Ncols(c);
+	assert n eq Ncols(d);
+    return Vector([c[i]*d[i] : i in [1..n]]);
+end function;
+
+
+//--------------------------------------------------------------
+
+/***************************************************************
+ ProductCode
+ 
+ Given two codes C and D with the same length and defined 
+ over the same field, return their component-wise product.
+
+ Input:
+        C: Code
+        D: Code
+
+ Output:
+        Component-wise product of C and D.
+   
+***************************************************************/
+
+function ProductCode(C, D)
+    n := Length(C);
+    // if one code is the null code, the product is the null code too over the same field
+	if Dimension(C) eq 0 then return C; end if;
+	if Dimension(D) eq 0 then return D; end if;
+    return LinearCode(Matrix([ProductCodeword(c, d) : c in Basis(C), d in Basis(D)]));
+end function;
+
+//--------------------------------------------------------------
+
+/***************************************************************
+ SquareCode
+ 
+ Given a code C, return its square code.
+
+ Input:
+        C: Code
+
+ Output:
+        Square code of C.
+   
+***************************************************************/
+
+function SquareCode(C)
+    return ProductCode(C, C);
+end function;
+
+//--------------------------------------------------------------

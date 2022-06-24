@@ -1,0 +1,57 @@
+/***************************************************************
+ This file contains the function:
+ 	KeyGen
+***************************************************************/
+
+/***************************************************************
+ KeyGen
+ 
+ Given a finite field order q, an extension degree m, a length n
+ and an alternant code degree r, return the generator matrix
+ of a random alternant code as the subfield subcode over F_q of a GRS
+ code of degree r over F_(q^m) as well as the secret support and 
+ multiplier.
+
+ Input:
+ 		q: ground field order
+        m: extension field degree 
+ 		n: alternant code length
+ 		r: alternant code degree
+
+ Output:
+ 		Generator matrix of a random alternant code in 
+ 		systematic form (public key) and support and multiplier
+ 		vectors (private key).
+   
+***************************************************************/
+
+function KeyGen(q, m, n ,r)
+    
+    // k: alternant code's expected dimension
+	k := n-r*m;
+	
+	// Fq: ground field
+	Fq := GF(q);
+	// Fqm: extension field of Fq of degree m with primitive element alpha
+	Fqm := GF(q^m);
+	AssignNames(~Fqm, ["alpha"]);
+	// SetFqm: Fqm seen as a set from which a random subset is sampled
+	SetFqm := Set(Fqm); 
+	// SetFqmstar: SetFqm without the zero element
+	SetFqmstar := SetFqm diff {0};
+
+	// x_priv: support vector of the alternant code, all the coordinates are different
+	x_priv := RandomSubset(SetFqm, n);
+	perm := Random(Sym(x_priv));
+	x_priv := [elt^perm : elt in x_priv];
+	// y_priv: multiplier vector of the alternant code, all the coordinates are different from 0
+	y_priv := [Random(SetFqmstar) : i in [1..n]];
+	
+	// Alt_code: alternant code of degree r over Fq with support x_priv and multiplier y_priv
+	Alt_code := AlternantCode(x_priv, y_priv, r, Fq);
+
+	return Alt_code, x_priv, y_priv; 
+
+end function; 
+
+//--------------------------------------------------------------

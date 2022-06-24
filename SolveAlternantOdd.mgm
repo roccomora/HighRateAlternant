@@ -1,0 +1,69 @@
+/***************************************************************
+ This file contains the function:
+ 	SolveAlternantOdd
+***************************************************************/
+
+load "EchelonFormSystem.mgm";
+load "FindMultiples.mgm";
+load "AlternantEquation.mgm";
+
+/***************************************************************
+ SolveAlternantSystem
+ 
+ Given a generator matrix genMat in systematic form of an
+ alternant code with odd ground field and the extension degree m,
+ return the projected variety on the last coordinates.
+
+ Input:
+        genMat: Generator matrix in systematic form
+        m: Extension degree
+        
+ Output:
+        Projection of the variety on the last coordinates.
+   
+***************************************************************/
+
+function SolveAlternantOdd(genMat, m)
+	Fqm := ext< Parent(genMat[1,1]) | m >;
+	k_sh := NumberOfRows(genMat);
+	n_sh := NumberOfColumns(genMat);
+	
+	PolRingVars := PolynomialRing(Fqm, 2*n_sh, "grevlex");
+	AssignNames(~PolRingVars, ["X"*IntegerToString(i) : i in [1..n_sh]] cat ["Y"*IntegerToString(i) : i in [1..n_sh]]);
+	
+	// i in [1..k_sh] for all the rows, but since in the distinguishable case the dimension is much smaller, for large parameters, i in [1..Binomial(3*m, 2)] is with high probability the same
+	// S, _, mons := EchelonFormSystem([AlternantEquation(PolRingVars, genMat, i) : i in [1..k_sh]]);
+	S, mat, _, mons := EchelonFormSystem([AlternantEquation(PolRingVars, genMat, i) : i in [1..Min(k_sh, Binomial(3*m, 2))]]);
+
+	V_n := [eqt : eqt in S | Degree(eqt) eq 1];
+	V_j := [FindMultiples(mat, PolRingVars.i, mons) : i in [n_sh+k_sh+1..2*n_sh-1]];
+	
+	// new equations taking into account multiples of X_{n-2}. This corresponds to Step 2 of the algorithm
+	U_j := [];
+	for i in [1..3*m-3] do
+		temp_U, temp_mat, _, temp_mondeg := EchelonFormSystem(V_j[i] cat V_j[3*m-2]);
+		//PolRingVars.i-PolRingVars.(n-2)=PolRingVars.i, since PolRingVars.(n-2) has been specialized in 1
+		Append(~U_j, FindMultiples(temp_mat, PolRingVars.(k_sh+i), temp_mondeg));
+	end for;
+	Append(~U_j, [eqt : eqt in EchelonFormSystem(V_j[3*m-2] cat V_j[3*m-1]) | Degree(eqt) le 2]);
+
+		
+	// Steps 3 and 4 are equivalent to a call to the built-in "Reduce" Magma function. Indeed, since there are only quadratic and linear equations, "Reduce" simply iteratively eliminate linear variables and put the Macaulay matrix in reduced form. The results is the projection on the last non-fixed unknowns of a grevlex basis
+	GB_grevlex := Reduce(&cat[U : U in U_j] cat V_n);
+	//printf "Grevlex basis:\n%o\n", GB_grevlex;	//uncomment to print the grevlex basis
+
+	// Move to lexicographic basis and compute variety on the projection ring	
+	PolRingProj := PolynomialRing(Fqm, 6*m-4, "grevlex");
+	AssignNames(~PolRingProj, ["X"*IntegerToString(i) : i in [k_sh+1..n_sh-3]] cat ["Y"*IntegerToString(i) : i in [k_sh+1..n_sh-1]]);
+	
+	homo :=  hom< PolRingVars -> PolRingProj | [ 0 : i in [1..k_sh]] cat [PolRingProj.i : i in [1..3*m-3]] cat [0 : i in [1..k_sh+3]] cat [PolRingProj.i : i in [3*m-2..6*m-4]] cat [0] >;
+	GB_Proj := [homo(eqt) : eqt in GB_grevlex];
+	Id_Proj := ideal< PolRingProj | GB_Proj >;
+	MarkGroebner(Id_Proj);
+	Id_lex := ChangeOrder(Id_Proj, "lex");
+	GB_lex := GroebnerBasis(Id_lex);
+	//printf "Lex basis:\n%o\n", GB_lex; 	// uncomment to print the lex basis
+	//Factorization(GB_lex[#GB_lex]);
+	
+	return Variety(Id_lex);
+end function;

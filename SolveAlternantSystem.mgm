@@ -1,0 +1,37 @@
+/***************************************************************
+ This file contains the function:
+ 	SolveAlternantSystem
+***************************************************************/
+
+load "SolveAlternant2.mgm";
+load "SolveAlternantEven.mgm";
+load "SolveAlternantOdd.mgm";
+
+/***************************************************************
+ SolveAlternantSystem
+ 
+ Given a generator matrix genMat in systematic form of an
+ alternant code and the extension degree m, return the projected
+ variety on the last coordinates.
+ on the 
+
+ Input:
+        genMat: Generator matrix in systematic form
+        m: Extension degree
+        
+ Output:
+        Projection of the variety on the last coordinates.
+   
+***************************************************************/
+
+function SolveAlternantSystem(genMat, m)
+	q := #Parent(genMat[1,1]);
+	if q eq 2 then
+		return SolveAlternant2(genMat, m);
+	end if;
+	if IsEven(q) then	
+		return SolveAlternantEven(genMat, m);
+	end if;
+	return SolveAlternantOdd(genMat, m);
+end function;
+		

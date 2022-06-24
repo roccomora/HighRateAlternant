@@ -1,0 +1,70 @@
+/***************************************************************
+ This file contains the function:
+ 	SolveAlternant2
+***************************************************************/
+
+load "EchelonFormSystem.mgm";
+load "FindMultiples.mgm";
+load "AlternantEquation.mgm";
+
+/***************************************************************
+ SolveAlternantSystem
+ 
+ Given a generator matrix genMat in systematic form of an
+ alternant code with ground field 2 and the extension degree m,
+ return the projected variety on the last coordinates.
+ 
+ Input:
+        genMat: Generator matrix in systematic form
+        m: Extension degree
+        
+ Output:
+        Projection of the variety on the last coordinates.
+   
+***************************************************************/
+
+function SolveAlternant2(genMat, m)
+	Fqm := ext< Parent(genMat[1,1]) | m >;
+	k_sh := NumberOfRows(genMat);
+	n_sh := NumberOfColumns(genMat);
+	
+	PolRingVars := PolynomialRing(Fqm, 2*n_sh, "grevlex");
+	AssignNames(~PolRingVars, ["W"*IntegerToString(i) : i in [1..n_sh]] cat ["Y"*IntegerToString(i) : i in [1..n_sh]]);
+	
+	// i in [1..k_sh] for all the rows, but since in the distinguishable case the dimension is much smaller, for large parameters, i in [1..Binomial(3*m, 2)] is with high probability the same
+	// S, _, mons := EchelonFormSystem([AlternantEquationCh2(PolRingVars, genMat, i) : i in [1..k_sh]]);
+	S, mat, _, mons := EchelonFormSystem([AlternantEquationCh2(PolRingVars, genMat, i) : i in [1..Min(k_sh, Binomial(3*m, 2))]]);
+
+	V_n := [eqt : eqt in S | Degree(eqt) eq 1];
+	V_j := [FindMultiples(mat, PolRingVars.i, mons) : i in [n_sh+k_sh+1..2*n_sh-1]];
+	
+	// new equations taking into account the Frobenius automorphism. The roles of V_j's and U_j's here are swapped 
+	U_j := [];
+	for i in [1..3*m-1] do
+		Append(~U_j, [Evaluate(eqt, [PolRingVars.i^2 : i in [1..n_sh]] cat [PolRingVars.i : i in [n_sh+1..2*n_sh]])  : eqt in V_j[i]]);
+		for j in [1..#V_j[i]] do
+			if 1 in Monomials(V_j[i][j]) then
+				V_j[i][j] +:= 1;
+			end if;
+		end for;				
+	end for;
+		
+	// it can be proven that the Groebner Basis computation stops at degree 3 and with the expception of V_n the equations in S are not needed
+	GB_grevlex := GroebnerBasis(&cat[U : U in U_j] cat &cat[V : V in V_j] cat V_n, 3);
+	//printf "Grevlex basis:\n%o\n", GB_grevlex;	//uncomment to print the grevlex basis
+
+	// Move to lexicographic basis and compute variety on the projection ring	
+	PolRingProj := PolynomialRing(Fqm, 6*m-4, "grevlex");
+	AssignNames(~PolRingProj, ["X"*IntegerToString(i) : i in [k_sh+1..n_sh-3]] cat ["Y"*IntegerToString(i) : i in [k_sh+1..n_sh-1]]);
+	
+	homo :=  hom< PolRingVars -> PolRingProj | [ 0 : i in [1..k_sh]] cat [PolRingProj.i : i in [1..3*m-3]] cat [0 : i in [1..k_sh+3]] cat [PolRingProj.i : i in [3*m-2..6*m-4]] cat [0] >;
+	GB_Proj := [homo(eqt) : eqt in GB_grevlex];
+	Id_Proj := ideal< PolRingProj | GB_Proj >;
+	MarkGroebner(Id_Proj);
+	Id_lex := ChangeOrder(Id_Proj, "lex");
+	GB_lex := GroebnerBasis(Id_lex);
+	//printf "Lex basis:\n%o\n", GB_lex; 	// uncomment to print the lex basis
+	//Factorization(GB_lex[#GB_lex]);
+	
+	return Variety(Id_lex);
+end function;

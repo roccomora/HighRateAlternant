@@ -1,0 +1,124 @@
+/***************************************************************
+ This file contains the function:
+ 	FullAttack
+***************************************************************/
+
+load "AlternantFiltration.mgm";
+load "SolveAlternantSystem.mgm";
+load "LinearRecover.mgm";
+load "Interlace.mgm";
+load "SystematicForm.mgm";
+
+/***************************************************************
+ FullAttack
+ 
+ Given an alternant code AltCode, its ground field size q, its
+ degree r, its length n and the extension degree m, run the full
+ attack and return a pair of support and multiplier (not
+ necessarily the same as in the private key) which define AltCode
+
+ Input:
+        q: ground field order
+        m: extension field degree 
+ 		n: alternant code length
+ 		r: alternant code degree
+		AltCode: alternant code
+		
+ Output:
+        A support and a multiplier defining AltCode.
+   
+***************************************************************/
+
+function FullAttack(q, m, n, r, AltCode)
+
+
+k := n-r*m;
+Fq := GF(q);
+Fqm := GF(q^m);
+AssignNames(~Fqm, ["alpha"]);
+
+printf "********************\n";
+printf "Beginning of the attack\n";
+printf "********************\n\n";
+	
+		
+timeTotal := Cputime();
+n_sh := n-r+3;
+k_sh := n_sh-3*m;
+
+for iter in [0..1] do
+	
+	timeFiltration := Cputime();
+		
+	printf "********************\n";
+	printf "Computing filtration %o\n\n", iter+1;
+	
+	AltCodeFiltration := AlternantFiltration(AltCode, {(r-3)*iter+1..(r-3)*(iter+1)});
+	//check that the code produced is indeed the expected alternant code
+	/*
+	if r gt 3
+		assert AltCodeFiltration eq AlternantCode([x_priv[i] : i  in [(r-3)*(1-iter)+1..(r-3)*(2-iter)] cat [2*(r-3)+1..n]], [y_priv[i]*&*[x_priv[i]-x_priv[j] : j in [(r-3)*iter+1..(r-3)*(iter+1)]] : i  in [(r-3)*(1-iter)+1..(r-3)*(2-iter)] cat [2*(r-3)+1..n]], 3, GF(q));
+	end if;
+	*/
+	
+	printf "Time required: %o s\n\n", Cputime(timeFiltration);
+	
+	//
+
+		
+	printf "********************\n";
+	printf "Creating original polynomial system %o\n\n", iter+1;
+	timeSystem := Cputime();
+	
+	genMat := GeneratorMatrix(AltCodeFiltration);	
+	genMat, permCols := SystematicForm(genMat);
+	
+	printf "Solving polynomial system %o\n\n", iter+1;
+	variety := SolveAlternantSystem(genMat, m);
+	printf "Time required: %o s\n\n", Cputime(timeSystem);	
+	
+	printf "********************\n";
+	printf "Linear recover %o\n\n", iter+1;
+	timeLinear := Cputime();	
+	if iter eq 0 then
+		solA := variety[1];
+		x_recoveredA, y_recoveredA := LinearRecover(q, m, genMat, permCols, solA);
+		
+	else
+		for solB in variety do
+			if forall(j){i : i in [1..3*m-3] | solB[i] eq x_recoveredA[(k_sh+i)^permCols]} then
+				x_recoveredB, y_recoveredB := LinearRecover(q, m, genMat, permCols, solB);
+				break;
+			end if;
+		end for;
+	end if;
+	printf "Time required: %o s\n\n", Cputime(timeLinear);
+end for;
+
+//check that the partial supports coincide in the intersection
+// assert x_recoveredA[r-2..n_sh-1] eq x_recoveredB[r-2..n_sh-1];
+
+
+printf "********************\n";
+printf "Interlace\n";
+timeInter := Cputime();
+
+x_recovered, y_recovered := Interlace(q, r, m, x_recoveredA, x_recoveredB, y_recoveredA, y_recoveredB);
+printf "Time required: %o s\n\n", Cputime(timeInter);
+	
+printf "********************\n";
+if AlternantCode(x_recovered, y_recovered, r, Fq) eq AltCode then
+	printf "Private key recovered!\n";
+	printf "********************\n";
+	printf "Total time required: %o s\n\n", Cputime(timeTotal);
+	return x_recovered, y_recovered;
+	printf "********************\n";
+else
+	printf "Error: private key not recovered.";
+	printf "********************\n";
+	return [], [];
+end if;
+
+
+end function;
+

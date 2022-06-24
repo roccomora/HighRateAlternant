@@ -1,0 +1,29 @@
+/***************************************************************
+ This file contains the function:
+ 	ConductorCode
+***************************************************************/
+
+load "Schur.mgm";
+
+/***************************************************************
+ ConductorCode
+ 
+ Given two codes C and D with the same length and defined over
+ the same field, return the conductor code of C into D. 
+
+ Input:
+        C: Code
+        D: Code
+
+ Output:
+        Conductor code of C into D.
+   
+***************************************************************/
+
+function ConductorCode(C, D)
+	// closed form expression for the conductor code
+	return Dual(ProductCode(C, Dual(D)));
+end function;
+
+//--------------------------------------------------------------
+

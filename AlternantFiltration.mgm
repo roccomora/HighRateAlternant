@@ -1,0 +1,45 @@
+/***************************************************************
+ This file contains the function:
+ 	AlternantFiltration
+***************************************************************/
+
+load "ConductorCode.mgm";
+load "Schur.mgm";
+
+/***************************************************************
+ AlternantFiltration
+ 
+ Given an alternant code Alt of degree r and a set of 
+ positions ShSet of cardinality I, return the alternant code of
+ degree r-I obtained from the filtration of the dual code. In
+ order to work, the function requires Alt to be a random
+ alternant code such that the square code of its dual is 
+ distinguishable and r-I to be at least equal to the ground
+ field size.
+
+ Input:
+        Alt: Random distinguishable alternant code
+        ShSet: Set of positions
+
+ Output:
+        Alternant code obtained from the filtration of the dual
+        code.
+   
+***************************************************************/
+
+function AlternantFiltration(Alt, ShSet)
+	if IsEmpty(ShSet) then
+		return Alt;
+	end if;
+	
+	ShSeq := Reverse(Sort(Setseq(ShSet)));
+	DualAlt_current := Dual(Alt);
+	// iterate over all the input positions
+	for i in ShSeq do
+		DualAlt_current := ConductorCode(PunctureCode(DualAlt_current, {i}), SquareCode(ShortenCode(DualAlt_current, {i})));
+	end for;
+	
+	return Dual(DualAlt_current);
+end function;
+
+//--------------------------------------------------------------
